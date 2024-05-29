@@ -1,105 +1,97 @@
 package com.utils;
 
+import com.aventstack.extentreports.ExtentReports;
+import com.aventstack.extentreports.ExtentTest;
+import com.aventstack.extentreports.MediaEntityBuilder;
+import com.aventstack.extentreports.reporter.ExtentSparkReporter;
+import com.aventstack.extentreports.reporter.configuration.Theme;
+
+import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.testng.ITestResult;
-
 import java.io.File;
 import java.io.IOException;
-
-import org.apache.commons.io.FileUtils;
-import com.aventstack.extentreports.ExtentReports;
-import com.aventstack.extentreports.ExtentTest;
-import com.aventstack.extentreports.MediaEntityBuilder;
-import com.aventstack.extentreports.Status;
-import com.aventstack.extentreports.markuputils.ExtentColor;
-import com.aventstack.extentreports.markuputils.MarkupHelper;
-import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
-import com.aventstack.extentreports.reporter.configuration.Theme;
-import com.paymongo.common.BasePage;
 
 public class ExtentReportsManager {
 
     private static ExtentReports extent;
     private static ExtentTest test;
-    private static ExtentHtmlReporter htmlReporter;
+    private static ExtentSparkReporter sparkReporter;
 
     public void startExtentReport(String path) {
-        htmlReporter = new ExtentHtmlReporter(Configuration.ROOTHPATH + path);
+        sparkReporter = new ExtentSparkReporter(Configuration.ROOTHPATH + path);
         System.out.println("Creating: " + path);
 
-        //Initialize ExtentReports and attach the Html Reporter
+        // Initialize ExtentReports and attach the Spark Reporter
         extent = new ExtentReports();
-        extent.attachReporter(htmlReporter);
+        extent.attachReporter(sparkReporter);
 
-        htmlReporter.config().setDocumentTitle("PayMongo Automation Report");
-        htmlReporter.config().setReportName("PayMongo Automation Report");
-        htmlReporter.config().setTheme(Theme.DARK);
-        htmlReporter.config().setTimeStampFormat("mm//dd//yyyy hh:mm:ss a");
+        sparkReporter.config().setDocumentTitle("PayMongo Automation Report");
+        sparkReporter.config().setReportName("PayMongo Automation Report");
+        sparkReporter.config().setTheme(Theme.DARK);
+        sparkReporter.config().setTimeStampFormat("mm//dd//yyyy hh:mm:ss a");
 
-        htmlReporter.start();
-        
-        // Initialize the test instance
-        test = extent.createTest("Test Name"); // Replace "Test Name" with your actual test name
+        extent.createTest("Test Name"); // Replace "Test Name" with your actual test name
     }
 
-    public void getExtentResult(WebDriver driver, ITestResult result) throws Exception {
-        
-        
-        String screenshotpath = getScreenShot(driver, result.getName());
+   public void getExtentResult(WebDriver driver, ITestResult result) throws Exception {
+        String screenshotPath = getScreenShot(driver, result.getName());
 
         if (result.getStatus() == ITestResult.FAILURE) {
-            test.fail("Entry Failed = " + result.getName(), MediaEntityBuilder.createScreenCaptureFromPath(screenshotpath).build());
+            test = extent.createTest("Entry Failed: " + result.getName());
+            test.fail("Test failed", MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
             System.out.println("Method Failed: " + result.getName());
         } else if(result.getStatus() == ITestResult.SKIP) {
-            test.skip("Entry Skipped: " + result.getName());
+            test = extent.createTest("Entry Skipped: " + result.getName());
+            test.skip("Test skipped");
             System.out.println("Method Skipped: " + result.getName());
         } else {
-            test.pass("Entry Passed: " + result.getName(), MediaEntityBuilder.createScreenCaptureFromPath(screenshotpath).build());
+            test = extent.createTest("Entry Passed: " + result.getName());
+            test.pass("Test passed", MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
             System.out.println("Method Passed: " + result.getName()); 
         }
-        htmlReporter.stop();
+        extent.flush();
     }
 
-    public void logstep(String details) {
+    public void logStep(String details) {
         test = extent.createTest(details);
         System.out.println("\n=============================================\n" + details + 
                            "\n==========================================\n");
-        test.log(Status.INFO, MarkupHelper.createLabel(details, ExtentColor.BROWN));
     }
 
-    public void pass( String details) {
+    public void pass(String details) {
         if (test != null) {
-            test.log(Status.PASS, details);
+            test.pass(details);
         }
     }
 
     public void fail(String details) {
         if (test != null) {
-            test.log(Status.FAIL, MarkupHelper.createLabel(details, ExtentColor.RED));
+            test.fail(details);
         }
     }
 
     public void info(String details) {
         if (test != null) {
-            test.log(Status.INFO, MarkupHelper.createLabel(details, ExtentColor.AMBER));
+            test.info(details);
         }
     }
 
     public static void endExtentReport () {
         if (extent != null) {
             extent.flush();
-            System.out.println("ExtentReports isclosed");
+            System.out.println("ExtentReports is closed");
         }
     }
 
-    public String getScreenShot(WebDriver driver, String screenshotname) throws IOException {
-        try{
+    public String getScreenShot(WebDriver driver, String screenshotName) throws IOException {
+        try {
             TakesScreenshot ts = (TakesScreenshot) driver;
             File source = ts.getScreenshotAs(OutputType.FILE);
 
-            String destination = Configuration.ROOTHPATH + "/screenshot/" + screenshotname + ".jpg";
+            String destination = Configuration.ROOTHPATH + "/screenshot/" + screenshotName + ".jpg";
             File finalDest = new File(destination);
             FileUtils.copyFile(source, finalDest);
             return destination;

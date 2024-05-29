@@ -1,6 +1,5 @@
 package com.utils;
 
-import com.paymongo.common.BasePage;
 import com.paymongo.common.BaseTest;
 
 public class Launch_Configuration extends BaseTest {
@@ -25,7 +24,5 @@ public class Launch_Configuration extends BaseTest {
     public static final void NavigateToPayMongo() throws Exception {
         BaseTest baseTest = new BaseTest();
         baseTest.setupLaunch();
-        BasePage basePage = new BasePage(baseTest.getDriver());
-        // Further actions using basePage
     }
 }

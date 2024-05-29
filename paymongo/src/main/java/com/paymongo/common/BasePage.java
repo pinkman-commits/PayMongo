@@ -1,10 +1,15 @@
 package com.paymongo.common;
 
 import java.time.Duration;
+import java.util.Set;
+
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -16,6 +21,7 @@ public class BasePage {
     protected WebDriver driver;
     private WebDriverWait wait;
     protected ExtentReportsManager extentManager;
+    String parentWindow;
 
     public BasePage(WebDriver driver) {
         this.driver = driver;
@@ -30,7 +36,7 @@ public class BasePage {
     protected WebDriverWait getWait() {
         return wait;
     }
-    public void verifyElementIsPresent(String[] locator) {
+    public String verifyElementIsPresent(String[] locator) {
         try {
             driver.findElement(By.xpath(locator[0]));
             System.out.println("Passed: " + locator[1] + " is present");
@@ -39,6 +45,7 @@ public class BasePage {
             System.out.println("Failed: " + locator[1] + " is not present");
             extentManager.fail(locator[1] + " is not present"); // Log fail status
         }
+        return parentWindow;
     }
 
     public void delay(int sec) throws InterruptedException {
@@ -49,15 +56,15 @@ public class BasePage {
         try {
             driver.findElement(By.xpath(locator[0])).click();
             System.out.println("Passed: " + locator[1] + " is clicked");
-            extentManager.logstep("Clicked on " + locator[1]); // Log step description
+            extentManager.logStep("Clicked on " + locator[1]); // Log step description
             extentManager.pass(locator[1] + " is clicked"); // Log pass status
         } catch (NoSuchElementException e) {
             System.out.println("Failed to click: " + locator[1] + " - Element not found");
-            extentManager.logstep("Failed to click on " + locator[1] + " - Element not found"); // Log step description
+            extentManager.logStep("Failed to click on " + locator[1] + " - Element not found"); // Log step description
             extentManager.fail("Failed to click on " + locator[1] + " - Element not found"); // Log fail status
         } catch (Exception e) {
             System.out.println("Failed to click: " + locator[1] + " - " + e.getMessage());
-            extentManager.logstep("Failed to click on " + locator[1] + " - " + e.getMessage()); // Log step description
+            extentManager.logStep("Failed to click on " + locator[1] + " - " + e.getMessage()); // Log step description
             extentManager.fail("Failed to click on " + locator[1] + " - " + e.getMessage()); // Log fail status
         }
     }
@@ -87,7 +94,7 @@ public class BasePage {
             element.clear();
             element.sendKeys(text);
             System.out.println("Entered text '" + text + "' into: " + locator[1]);
-            extentManager.logstep("Entered text '" + text + "' into: " + locator[1]); // Log step description
+            extentManager.logStep("Entered text '" + text + "' into: " + locator[1]); // Log step description
             extentManager.pass("Entered text '" + text + "' into: " + locator[1]); // Log pass status
         } catch (NoSuchElementException e) {
             System.out.println("Failed to enter text into: " + locator[1] + " - Element not found");
@@ -124,7 +131,7 @@ public class BasePage {
     
             // Log loading spinner visibility
             System.out.println("Loading spinner is visible.");
-            extentManager.logstep("Loading spinner is visible"); // Log info status
+            extentManager.logStep("Loading spinner is visible"); // Log info status
     
             // Wait until the loading spinner disappears
             wait.until(ExpectedConditions.invisibilityOf(loadingSpinner));
@@ -140,6 +147,87 @@ public class BasePage {
             extentManager.fail("Error occurred while waiting for loading spinner: " + e.getMessage()); // Log fail status
         }
     }
+
+    public boolean isNewTabOpened() {
+        // Get the window handle of the current tab
+        String originalHandle = driver.getWindowHandle();
+        
+        // Switch to the new tab
+        for (String handle : driver.getWindowHandles()) {
+            if (!handle.equals(originalHandle)) {
+                // Found the new tab, switch to it
+                driver.switchTo().window(handle);
+                return true; // New tab opened
+            }
+        }
+        
+        return false; // New tab not opened
+    }
+    
+    
+
+
+    public void switchToNewTab() {
+        parentWindow = driver.getWindowHandle();
+        
+        // Wait for the number of window handles to increase
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10)); // Adjust the timeout as needed
+        wait.until(ExpectedConditions.numberOfWindowsToBe(2)); // Wait until two windows are open
+        
+        // Now that the new tab is open, switch to it
+        Set<String> handles = driver.getWindowHandles();
+        for(String windowHandle : handles) {
+            if(!windowHandle.equals(parentWindow)){
+                driver.switchTo().window(windowHandle);
+                driver.manage().window().maximize();
+                System.out.println("[LOG] Switching to New Window");
+            
+            
+                
+                break; // Exit the loop once switched to the new tab
+            }
+        }
+    }
+
+    public void closeNewTabAndValidate() {
+        // Close the new tab
+        driver.close();
+        
+        // Wait for the new tab to close and log the action
+        System.out.println("[LOG] Closing the new tab...");
+        try {
+            Thread.sleep(2000); // Delay for 2 seconds to ensure the new tab is closed
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // Switch back to the parent window
+        switchToParentWindow();
+    }
+
+    public void switchToParentWindow() {
+        // Switch back to the parent window using parentWindow variable
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10)); // Adjust the timeout as needed
+        wait.until(ExpectedConditions.numberOfWindowsToBe(1)); // Wait until two windows are open
+
+        driver.switchTo().window(parentWindow);
+        driver.manage().window().maximize();
+        System.out.println("[LOG] Switched back to the parent window.");
+    }
+    
+
+    public void waitForPageToLoad() {
+    try {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(Configuration.DEFAULT_WAIT));
+        wait.until(webDriver -> ((JavascriptExecutor) webDriver).executeScript("return document.readyState").equals("complete"));
+        System.out.println("Page is fully loaded.");
+        extentManager.pass("Page is fully loaded."); // Log pass status
+    } catch (Exception e) {
+        System.out.println("Error occurred while waiting for the page to load: " + e.getMessage());
+        extentManager.fail("Error occurred while waiting for the page to load: " + e.getMessage()); // Log fail status
+    }
+}
+
 
 
 

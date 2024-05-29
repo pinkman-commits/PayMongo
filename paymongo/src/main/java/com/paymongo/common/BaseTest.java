@@ -4,11 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
-import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.testng.ITestResult;
@@ -18,7 +18,7 @@ import org.testng.annotations.BeforeClass;
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.MediaEntityBuilder;
-import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
+import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.utils.Configuration;
 import com.utils.Launch_Configuration;
 
@@ -26,14 +26,14 @@ public class BaseTest {
 
     protected WebDriver driver;
     private ExtentReports extent;
-    private ExtentHtmlReporter htmlReporter;
+    private ExtentSparkReporter sparkReporter;
     protected ExtentTest test;
 
     @BeforeClass
     public void setupExtent() {
-        htmlReporter = new ExtentHtmlReporter(System.getProperty("user.dir") + "/test-output/testReport.html");
+        sparkReporter = new ExtentSparkReporter(System.getProperty("user.dir") + "/test-output/testReport.html");
         extent = new ExtentReports();
-        extent.attachReporter(htmlReporter);
+        extent.attachReporter(sparkReporter);
     }
 
     public void setupLaunch() {
@@ -41,6 +41,9 @@ public class BaseTest {
             case "chrome":
                 System.out.println("Chrome Browser is being launched");
                 System.setProperty(Configuration.CHROME, Configuration.ROOTHPATH + "/driver/chromedriver.exe");
+                // Set up ChromeOptions to handle permissions
+                ChromeOptions options = new ChromeOptions();
+                options.addArguments("--use-fake-ui-for-media-stream");
                 driver = new ChromeDriver();
                 break;
             case "edge":
@@ -56,7 +59,8 @@ public class BaseTest {
         }
         driver.get(Launch_Configuration.URL());
         driver.manage().timeouts().implicitlyWait(Configuration.DEFAULT_WAIT, TimeUnit.SECONDS);
-        driver.manage().window().setSize(new Dimension(1920, 1080));
+        driver.manage().window().maximize();
+        //driver.manage().window().setSize(new Dimension(1920, 1080));
     }
 
     public WebDriver getDriver() {
@@ -68,13 +72,16 @@ public class BaseTest {
         String screenshotPath = getScreenShot(driver, result.getName());
 
         if (result.getStatus() == ITestResult.FAILURE) {
-            test.fail("Entry Failed = " + result.getName(), MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
+            test = extent.createTest("Entry Failed: " + result.getName());
+            test.fail("Test failed", MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
             System.out.println("Method Failed: " + result.getName());
         } else if (result.getStatus() == ITestResult.SKIP) {
-            test.skip("Entry Skipped: " + result.getName());
+            test = extent.createTest("Entry Skipped: " + result.getName());
+            test.skip("Test skipped");
             System.out.println("Method Skipped: " + result.getName());
         } else {
-            test.pass("Entry Passed: " + result.getName(), MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
+            test = extent.createTest("Entry Passed: " + result.getName());
+            test.pass("Test passed", MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
             System.out.println("Method Passed: " + result.getName());
         }
         extent.flush();
