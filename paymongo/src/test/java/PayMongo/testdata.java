@@ -4,7 +4,7 @@ public class testdata {
 
     //Valid Login
     public static final String valid_email = "jocsjer1997@gmail.com";
-    public static final String valid_email1 = "jocsjer1997@gmail.com";
+    public static final String valid_email1 = "CaitlinSnow2024@gmail.com";
     public static final String valid_password = "FastestManAlive2024!";
 
     public static final String verificationcapturepage = "https://capture.kyc.idfy.com/captures?t=Bb7qjAdBYydG";

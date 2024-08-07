@@ -1,6 +1,5 @@
 package com.paymongo.mongopage;
 
-import org.openqa.selenium.By;
 
 public class PayMongoPagePath {
     //Login Page

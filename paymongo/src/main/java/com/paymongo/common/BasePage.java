@@ -8,8 +8,6 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -36,6 +34,7 @@ public class BasePage {
     protected WebDriverWait getWait() {
         return wait;
     }
+    
     public String verifyElementIsPresent(String[] locator) {
         try {
             driver.findElement(By.xpath(locator[0]));
@@ -52,6 +51,10 @@ public class BasePage {
         Thread.sleep(sec * 1000);
     }
 
+    /*
+     * 
+     * @param locator
+    */
     public void click(String[] locator) {
         try {
             driver.findElement(By.xpath(locator[0])).click();
@@ -69,6 +72,9 @@ public class BasePage {
         }
     }
 
+    /* Method for clicking on whitespace to eliminate tabs that are opened via hover 
+     * 
+    */
     public void clickAnywhere() {
         try {
             // Find an element that represents white space (e.g., body or any empty div)
